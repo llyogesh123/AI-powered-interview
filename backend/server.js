@@ -56,11 +56,34 @@ app.use('/api/interviews', interviewsRoutes);
 app.use('/api/questions', questionsRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    message: 'Server is running',
+// Root route for API health check
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'AI-Powered Interview Platform API',
+    version: '1.0.0',
+    status: 'running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    uploadDir: process.env.NODE_ENV === 'production' ? 'system-temp' : 'local-uploads',
+    memoryUsage: process.memoryUsage()
+  });
+});
+
+// Test upload endpoint
+app.get('/api/test-upload', (req, res) => {
+  const os = require('os');
+  const path = require('path');
+  
+  res.json({
+    message: 'Upload configuration test',
+    tempDir: os.tmpdir(),
+    environment: process.env.NODE_ENV,
+    platform: process.platform,
+    nodeVersion: process.version,
+    uploadLimits: {
+      maxFileSize: '10MB',
+      allowedTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    }
   });
 });
 
