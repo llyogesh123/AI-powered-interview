@@ -21,13 +21,36 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: [
-    'http://localhost:5173', // Development
-    'https://localhost:5173', // Development HTTPS
-    process.env.FRONTEND_URL, // Production frontend URL
-    /\.onrender\.com$/ // Allow all Render subdomains
-  ].filter(Boolean),
-  credentials: true
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'https://localhost:5173',
+      'http://localhost:3000',
+      'https://localhost:3000',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+    
+    console.log('CORS request from origin:', origin);
+    
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow all .onrender.com subdomains
+    if (origin && origin.match(/\.onrender\.com$/)) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
@@ -47,6 +70,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interv
 .catch((error) => {
   console.error('MongoDB connection error:', error);
   process.exit(1);
+});
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  console.log('OPTIONS request for:', req.path);
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
 });
 
 // Simple health check at root

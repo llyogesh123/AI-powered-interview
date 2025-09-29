@@ -1,5 +1,6 @@
 // API service for frontend integration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ai-powered-interview-6gw7.onrender.com/api';
+// Force production URL since environment variables aren't loading correctly
+const API_BASE_URL = 'https://ai-powered-interview-6gw7.onrender.com/api';
 
 class ApiService {
   constructor() {
@@ -8,8 +9,10 @@ class ApiService {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('Making API request to:', url);
     
     const config = {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
