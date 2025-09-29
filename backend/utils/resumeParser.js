@@ -5,22 +5,41 @@ const path = require('path');
 
 const parseResume = async (filePath, mimetype) => {
   try {
+    console.log('Parsing resume:', { filePath, mimetype });
     let text = '';
     
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+      console.log('File exists and is accessible');
+    } catch (accessError) {
+      console.error('File access error:', accessError);
+      throw new Error(`Cannot access uploaded file: ${accessError.message}`);
+    }
+    
     if (mimetype === 'application/pdf') {
+      console.log('Parsing PDF file...');
       text = await parsePDF(filePath);
     } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      console.log('Parsing DOCX file...');
       text = await parseDocx(filePath);
     } else if (mimetype === 'application/msword') {
+      console.log('Parsing DOC file...');
       // For older .doc files, try to extract what we can
       text = await parseDoc(filePath);
     } else {
       throw new Error('Unsupported file format');
     }
     
+    console.log('Text extracted, length:', text.length);
     return extractResumeData(text);
   } catch (error) {
-    console.error('Error parsing resume:', error);
+    console.error('Error parsing resume:', {
+      message: error.message,
+      stack: error.stack,
+      filePath,
+      mimetype
+    });
     throw new Error(`Failed to parse resume: ${error.message}`);
   }
 };

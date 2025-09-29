@@ -22,6 +22,17 @@ const router = express.Router();
 // @access  Public
 router.post('/', uploadLimiter, upload.single('resume'), handleMulterError, async (req, res) => {
   try {
+    console.log('Upload request received:', {
+      hasFile: !!req.file,
+      headers: req.headers['content-type'],
+      fileInfo: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: req.file.path
+      } : null
+    });
+
     if (!req.file) {
       return res.status(400).json({ 
         success: false,
@@ -55,6 +66,16 @@ router.post('/', uploadLimiter, upload.single('resume'), handleMulterError, asyn
 
     await candidate.save();
 
+    // Clean up temporary file in production
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        const fs = require('fs').promises;
+        await fs.unlink(req.file.path);
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup temporary file:', cleanupError.message);
+      }
+    }
+
     // Determine missing fields
     const missingFields = [];
     if (!candidate.name) missingFields.push('name');
@@ -82,10 +103,21 @@ router.post('/', uploadLimiter, upload.single('resume'), handleMulterError, asyn
 
   } catch (error) {
     console.error('Create candidate error:', error);
+    
+    // Clean up uploaded file if there's an error
+    if (req.file && req.file.path) {
+      try {
+        const fs = require('fs').promises;
+        await fs.unlink(req.file.path);
+      } catch (cleanupError) {
+        console.warn('Failed to cleanup file after error:', cleanupError.message);
+      }
+    }
+    
     res.status(500).json({ 
       success: false,
       message: 'Error creating candidate', 
-      error: error.message 
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });

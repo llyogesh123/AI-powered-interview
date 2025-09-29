@@ -1,17 +1,27 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Use system temp directory for Render compatibility
+const getUploadDir = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Use system temp directory in production (Render)
+    return os.tmpdir();
+  } else {
+    // Use local uploads directory in development
+    const uploadDir = path.join(__dirname, '../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    return uploadDir;
+  }
+};
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, getUploadDir());
   },
   filename: (req, file, cb) => {
     // Generate unique filename with timestamp
