@@ -49,11 +49,20 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interv
   process.exit(1);
 });
 
+// Simple health check at root
+app.get('/', (req, res) => {
+  res.json({
+    message: 'AI-Powered Interview API Server is running!',
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
-app.use('/api/auth', authRoutes);
 app.use('/api/candidates', candidatesRoutes);
 app.use('/api/interviews', interviewsRoutes);
 app.use('/api/questions', questionsRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 // Root route for API health check
